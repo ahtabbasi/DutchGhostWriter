@@ -111,7 +111,8 @@ export async function generateText(apiKey, userPrompt, maxLength = 1000) {
 Generate clear, natural English text based on the user's request.
 Keep the text under ${maxLength} characters.
 Do not include any meta-commentary or explanations - just provide the text itself.
-Make sure the text contains complete sentences that are suitable for translation practice.`
+Make sure the text contains complete sentences that are suitable for translation practice.
+IMPORTANT: Each sentence must start on a new line.`
 
   const fullPrompt = `${systemPrompt}\n\nUser request: ${userPrompt}`
   

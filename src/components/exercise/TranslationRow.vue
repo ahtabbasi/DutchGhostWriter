@@ -164,7 +164,7 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
 }
 
 .dutch-input {
-  font-style: italic;
+  /* Dutch text styling */
 }
 
 .row-actions {

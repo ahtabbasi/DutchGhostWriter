@@ -74,11 +74,12 @@ export async function saveTranslation(translation) {
     const store = tx.objectStore(TRANSLATIONS_STORE)
     
     const now = new Date().toISOString()
-    const data = {
+    // Deep clone to remove Vue reactive Proxies - IndexedDB cannot structured-clone Proxies
+    const data = JSON.parse(JSON.stringify({
       ...translation,
       createdAt: translation.createdAt || now,
       updatedAt: now
-    }
+    }))
     
     logger.storageWrite('translation', { id: data.id, title: data.title })
     
