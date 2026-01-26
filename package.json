@@ -1,0 +1,25 @@
+{
+  "name": "dutchghostwriter",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Practice Dutch translations with AI-powered assistance",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "pinia": "^3.0.4",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "gh-pages": "^6.3.0",
+    "tailwindcss": "^4.1.18",
+    "vite": "^7.2.4"
+  }
+}
