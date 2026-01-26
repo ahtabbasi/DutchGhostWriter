@@ -1,6 +1,8 @@
 <script setup>
 import { ref, watch } from 'vue'
 import logger from '../../services/logger'
+import { shouldHidePopupWarning } from '../../services/storage'
+import TranslatePopupDialog from './TranslatePopupDialog.vue'
 
 const props = defineProps({
   sentence: {
@@ -17,6 +19,7 @@ const emit = defineEmits(['update', 'add-after', 'delete'])
 
 const englishValue = ref(props.sentence.english)
 const dutchValue = ref(props.sentence.dutch)
+const showPopupDialog = ref(false)
 
 // Debounce timer
 let debounceTimer = null
@@ -52,6 +55,33 @@ function handleDelete() {
   emit('delete', props.sentence.id)
 }
 
+function handleTranslate() {
+  const text = englishValue.value.trim()
+  if (!text) return
+  
+  logger.action(`Opening Google Translate for sentence ${props.sentence.id}`)
+  
+  // Show popup warning dialog if not hidden
+  if (!shouldHidePopupWarning()) {
+    showPopupDialog.value = true
+  }
+  
+  // Open Google Translate in popup window
+  const encoded = encodeURIComponent(text)
+  const url = `https://translate.google.com/?sl=en&tl=nl&text=${encoded}&op=translate`
+  
+  const width = 550
+  const height = 650
+  const left = window.screenX + (window.outerWidth - width) / 2
+  const top = window.screenY + (window.outerHeight - height) / 2
+  
+  window.open(
+    url,
+    'GoogleTranslate',
+    `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+  )
+}
+
 const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
 </script>
 
@@ -59,13 +89,31 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
   <tr class="translation-row">
     <td class="row-number">{{ index + 1 }}</td>
     <td class="english-cell">
-      <textarea 
-        v-model="englishValue"
-        class="cell-input"
-        placeholder="English text..."
-        @input="handleEnglishChange"
-        rows="2"
-      ></textarea>
+      <div class="english-cell-content">
+        <textarea 
+          v-model="englishValue"
+          class="cell-input"
+          placeholder="English text..."
+          @input="handleEnglishChange"
+          rows="2"
+        ></textarea>
+        <button 
+          v-if="englishValue.trim()"
+          class="translate-btn"
+          @click="handleTranslate"
+          title="Translate to Dutch with Google Translate"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m5 8 6 6"></path>
+            <path d="m4 14 6-6 2-3"></path>
+            <path d="M2 5h12"></path>
+            <path d="M7 2h1"></path>
+            <path d="m22 22-5-10-5 10"></path>
+            <path d="M14 18h6"></path>
+          </svg>
+          <span class="translate-tooltip">Translate to Dutch</span>
+        </button>
+      </div>
     </td>
     <td class="dutch-cell">
       <textarea 
@@ -101,6 +149,12 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
       </div>
     </td>
   </tr>
+  
+  <!-- Popup Warning Dialog -->
+  <TranslatePopupDialog 
+    :show="showPopupDialog" 
+    @close="showPopupDialog = false" 
+  />
 </template>
 
 <style scoped>
@@ -126,6 +180,79 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
 .dutch-cell {
   width: 42%;
   vertical-align: top;
+}
+
+.english-cell-content {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.english-cell-content .cell-input {
+  flex: 1;
+}
+
+.translate-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 6px;
+  border: none;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-top: 6px;
+}
+
+.translate-btn:hover {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  transform: scale(1.05);
+}
+
+.translate-btn:active {
+  transform: scale(0.95);
+}
+
+.translate-tooltip {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.translate-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: var(--color-border);
+}
+
+.translate-btn:hover .translate-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .actions-cell {

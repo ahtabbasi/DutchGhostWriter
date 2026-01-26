@@ -214,7 +214,8 @@ export async function deleteTranslation(id) {
 const STORAGE_KEYS = {
   API_KEY: 'dutchgw_api_key',
   THEME: 'dutchgw_theme',
-  MAX_TEXT_LENGTH: 'dutchgw_max_text_length'
+  MAX_TEXT_LENGTH: 'dutchgw_max_text_length',
+  HIDE_POPUP_WARNING: 'dutchgw_hide_popup_warning'
 }
 
 /**
@@ -274,6 +275,23 @@ export function getMaxTextLength() {
 export function saveMaxTextLength(length) {
   logger.storageWrite('maxTextLength', length)
   localStorage.setItem(STORAGE_KEYS.MAX_TEXT_LENGTH, String(length))
+}
+
+/**
+ * Check if popup warning should be hidden
+ */
+export function shouldHidePopupWarning() {
+  const hide = localStorage.getItem(STORAGE_KEYS.HIDE_POPUP_WARNING) === 'true'
+  logger.storageRead('hidePopupWarning', hide)
+  return hide
+}
+
+/**
+ * Save popup warning preference
+ */
+export function setHidePopupWarning(hide) {
+  logger.storageWrite('hidePopupWarning', hide)
+  localStorage.setItem(STORAGE_KEYS.HIDE_POPUP_WARNING, String(hide))
 }
 
 export { STORAGE_KEYS }
