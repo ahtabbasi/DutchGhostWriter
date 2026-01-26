@@ -34,7 +34,7 @@ const maskedApiKey = computed(() => {
 
 function startEditApiKey() {
   isEditingApiKey.value = true
-  newApiKey.value = ''
+  newApiKey.value = settingsStore.apiKey
   logger.action('Started editing API key')
 }
 
@@ -172,8 +172,8 @@ function goBack() {
               <div class="api-key-edit">
                 <input 
                   v-model="newApiKey"
-                  type="password"
-                  class="input"
+                  type="text"
+                  class="input api-key-input"
                   placeholder="Enter new API key"
                   :disabled="isValidatingKey"
                 />
@@ -460,6 +460,11 @@ function goBack() {
 .edit-actions {
   display: flex;
   gap: 12px;
+}
+
+.api-key-input {
+  font-family: monospace;
+  font-size: 0.9375rem;
 }
 
 .setting-row {

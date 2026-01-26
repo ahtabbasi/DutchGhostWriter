@@ -101,10 +101,10 @@ function isActive(id) {
     <div v-show="!isCollapsed" class="sidebar-content">
       <!-- Header -->
       <div class="sidebar-header">
-        <h1 class="app-title">
+        <button class="app-title" @click="goHome" title="Go to Home">
           <span class="title-icon">🇳🇱</span>
           <span class="title-text">Dutch GhostWriter</span>
-        </h1>
+        </button>
       </div>
 
       <!-- Actions -->
@@ -134,17 +134,8 @@ function isActive(id) {
             class="translation-item"
             :class="{ 'active': isActive(translation.id) }"
           >
-            <!-- Delete confirmation overlay -->
-            <div v-if="showDeleteConfirm === translation.id" class="delete-confirm">
-              <p>Delete this translation?</p>
-              <div class="confirm-actions">
-                <button class="btn btn-danger btn-sm" @click="deleteTranslation(translation.id)">Delete</button>
-                <button class="btn btn-secondary btn-sm" @click="cancelDelete">Cancel</button>
-              </div>
-            </div>
-
             <!-- Rename mode -->
-            <div v-else-if="editingId === translation.id" class="rename-form">
+            <div v-if="editingId === translation.id" class="rename-form">
               <input 
                 v-model="editingTitle"
                 class="input input-sm"
@@ -224,12 +215,27 @@ function isActive(id) {
 
     <!-- Collapsed state icons -->
     <div v-show="isCollapsed" class="sidebar-collapsed-icons">
-      <button class="collapsed-icon" @click="goHome" title="New Translation">
+      <!-- Hamburger menu at top -->
+      <button class="collapsed-icon hamburger-btn" @click="toggleSidebar" title="Expand sidebar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      
+      <!-- New translation button -->
+      <button class="collapsed-icon new-btn" @click="goHome" title="New Translation">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
       </button>
+
+      <!-- Spacer to push bottom icons down -->
+      <div class="collapsed-spacer"></div>
+
+      <!-- Bottom icons (dark mode + settings) -->
       <button class="collapsed-icon" @click="toggleTheme" :title="isDark ? 'Light mode' : 'Dark mode'">
         <svg v-if="isDark" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"></circle>
@@ -253,6 +259,26 @@ function isActive(id) {
         </svg>
       </button>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <Teleport to="body">
+      <div v-if="showDeleteConfirm !== null" class="modal-backdrop" @click.self="cancelDelete">
+        <div class="modal-content delete-modal animate-slide-in">
+          <div class="delete-modal-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </div>
+          <h3 class="delete-modal-title">Delete Translation?</h3>
+          <p class="delete-modal-message">This action cannot be undone. The translation will be permanently deleted.</p>
+          <div class="delete-modal-actions">
+            <button class="btn btn-secondary" @click="cancelDelete">Cancel</button>
+            <button class="btn btn-danger" @click="deleteTranslation(showDeleteConfirm)">Delete</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </aside>
 </template>
 
@@ -265,7 +291,8 @@ function isActive(id) {
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  position: relative;
+  position: sticky;
+  top: 0;
   transition: width 0.3s ease, min-width 0.3s ease;
 }
 
@@ -318,6 +345,15 @@ function isActive(id) {
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.app-title:hover {
+  opacity: 0.8;
 }
 
 .title-icon {
@@ -449,36 +485,6 @@ function isActive(id) {
   color: white;
 }
 
-.delete-confirm {
-  position: absolute;
-  inset: 0;
-  background: var(--color-bg-secondary);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  z-index: 5;
-}
-
-.delete-confirm p {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.confirm-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-sm {
-  padding: 4px 8px;
-  font-size: 0.75rem;
-}
 
 .rename-form {
   flex: 1;
@@ -529,9 +535,13 @@ function isActive(id) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 60px 0 16px;
+  gap: 12px;
+  padding: 16px 0;
   height: 100%;
+}
+
+.collapsed-spacer {
+  flex: 1;
 }
 
 .collapsed-icon {
@@ -553,12 +563,60 @@ function isActive(id) {
   color: var(--color-text-primary);
 }
 
-.collapsed-icon:first-child {
+.collapsed-icon.hamburger-btn {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.collapsed-icon.hamburger-btn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.collapsed-icon.new-btn {
   background: var(--gradient-accent);
   color: white;
 }
 
-.collapsed-icon:first-child:hover {
+.collapsed-icon.new-btn:hover {
   opacity: 0.9;
+}
+
+/* Delete Modal */
+.delete-modal {
+  width: 380px;
+  padding: 32px;
+  text-align: center;
+}
+
+.delete-modal-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-error) 15%, transparent);
+  color: var(--color-error);
+}
+
+.delete-modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 8px;
+}
+
+.delete-modal-message {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  margin: 0 0 24px;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 </style>
