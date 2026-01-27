@@ -160,3 +160,83 @@ export function splitIntoSentences(text) {
   logger.actionSuccess(`Split into ${sentences.length} sentences`)
   return sentences
 }
+
+/**
+ * Format context sentences for the review prompt
+ */
+function formatContextSentences(sentences) {
+  if (!sentences || sentences.length === 0) {
+    return 'No surrounding context available.'
+  }
+  return sentences.map((s, i) => `${i + 1}. "${s}"`).join('\n')
+}
+
+/**
+ * Review a user's Dutch translation using AI
+ */
+export async function reviewTranslation(apiKey, englishText, dutchTranslation, contextBefore = [], contextAfter = []) {
+  logger.api('Reviewing translation with AI')
+  
+  const precedingSentences = formatContextSentences(contextBefore)
+  const followingSentences = formatContextSentences(contextAfter)
+  
+  const prompt = `You are a Dutch language tutor reviewing an English to Dutch translation. Be encouraging but thorough in your feedback.
+
+## Context
+The sentence being translated is part of a larger text. Here is the surrounding context:
+
+**Preceding sentences:**
+${precedingSentences}
+
+**Sentence to review:**
+- English: ${englishText}
+- User's translation: ${dutchTranslation}
+
+**Following sentences:**
+${followingSentences}
+
+## Your Task
+1. **Evaluate** the user's Dutch translation for accuracy, grammar, and natural phrasing
+2. **Identify** any errors or areas for improvement
+3. **Provide** a corrected/improved translation
+
+## Response Format
+Respond using Markdown with the following structure:
+
+### Overall Assessment
+[One of: ✅ Excellent | 👍 Good | ⚠️ Needs Improvement | ❌ Incorrect]
+
+### Feedback
+[2-3 sentences explaining what the user did well and what needs improvement. Be specific about grammar, word choice, word order, or spelling issues. Use **bold** to highlight specific Dutch words or phrases being discussed.]
+
+### Corrections
+[If there are errors, list them as bullet points. Format each as:]
+- **[incorrect word/phrase]** → **[correct word/phrase]**: [brief explanation in italics]
+
+[If no corrections needed, write: "No corrections needed - great job!"]
+
+### Suggested Translation
+> [Your recommended Dutch translation in a blockquote]
+
+### Tips
+💡 [One helpful tip for remembering this grammar rule or vocabulary. Use \`inline code\` for specific Dutch words or grammar terms.]
+
+## Styling Guidelines
+- Use **bold** for Dutch words and phrases that are being discussed or corrected
+- Use *italics* for explanations and grammar terminology
+- Use \`inline code\` for grammar terms (e.g., \`de-woorden\`, \`het-woorden\`, \`perfectum\`)
+- Use > blockquotes for the suggested translation to make it stand out
+- Use bullet points for listing multiple corrections
+- Keep paragraphs short (2-3 sentences max) for readability`
+
+  try {
+    const response = await callGeminiAPI(apiKey, prompt)
+    const reviewContent = extractTextFromResponse(response)
+    
+    logger.actionSuccess('Translation review generated')
+    return { success: true, content: reviewContent }
+  } catch (error) {
+    logger.error('Translation review failed', error)
+    return { success: false, error: error.message || 'Failed to review translation' }
+  }
+}

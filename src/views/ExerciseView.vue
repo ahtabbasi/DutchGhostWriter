@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTranslationsStore } from '../stores/translations'
 import TranslationTable from '../components/exercise/TranslationTable.vue'
+import AIReviewSidebar from '../components/exercise/AIReviewSidebar.vue'
 import ErrorModal from '../components/layout/ErrorModal.vue'
 import logger from '../services/logger'
 
@@ -150,6 +151,9 @@ function handleErrorClose() {
         </p>
       </div>
     </template>
+
+    <!-- AI Review Sidebar -->
+    <AIReviewSidebar />
 
     <!-- Error Modal -->
     <ErrorModal 

@@ -1,8 +1,11 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import logger from '../../services/logger'
 import { shouldHidePopupWarning } from '../../services/storage'
+import { useTranslationsStore } from '../../stores/translations'
 import TranslatePopupDialog from './TranslatePopupDialog.vue'
+
+const translationsStore = useTranslationsStore()
 
 const props = defineProps({
   sentence: {
@@ -15,11 +18,26 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update', 'add-after', 'delete'])
+const emit = defineEmits(['update', 'add-after', 'delete', 'request-review'])
 
 const englishValue = ref(props.sentence.english)
 const dutchValue = ref(props.sentence.dutch)
 const showPopupDialog = ref(false)
+
+// Show review button only when both English and Dutch have content
+const showReviewButton = computed(() => {
+  return englishValue.value?.trim() && dutchValue.value?.trim()
+})
+
+// Check if this sentence has a cached AI review
+const hasCachedReview = computed(() => {
+  return translationsStore.hasReviewCache(props.sentence.id)
+})
+
+// Check if this row is currently being reviewed
+const isBeingReviewed = computed(() => {
+  return translationsStore.reviewSentenceId === props.sentence.id
+})
 
 // Debounce timer
 let debounceTimer = null
@@ -82,6 +100,11 @@ function handleTranslate() {
   )
 }
 
+function handleReview() {
+  logger.action(`Requesting AI review for sentence ${props.sentence.id}`)
+  translationsStore.openReview(props.sentence.id)
+}
+
 const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
 </script>
 
@@ -116,13 +139,35 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
       </div>
     </td>
     <td class="dutch-cell">
-      <textarea 
-        v-model="dutchValue"
-        class="cell-input dutch-input"
-        placeholder="Enter Dutch translation..."
-        @input="handleDutchChange"
-        rows="2"
-      ></textarea>
+      <div class="dutch-cell-content">
+        <textarea 
+          v-model="dutchValue"
+          class="cell-input dutch-input"
+          placeholder="Enter Dutch translation..."
+          @input="handleDutchChange"
+          rows="2"
+        ></textarea>
+        <button 
+          v-if="showReviewButton"
+          class="review-btn"
+          :class="{ 'has-cache': hasCachedReview, 'is-active': isBeingReviewed }"
+          @click="handleReview"
+          :title="hasCachedReview ? 'View AI Review' : 'Get AI Review'"
+        >
+          <!-- Sparkle icon for new review -->
+          <svg v-if="!hasCachedReview" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            <path d="M20 3v4"/>
+            <path d="M22 5h-4"/>
+          </svg>
+          <!-- Checkmark icon for cached review -->
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          <span class="review-btn-text">Review</span>
+        </button>
+      </div>
     </td>
     <td class="actions-cell">
       <div class="row-actions">
@@ -290,8 +335,67 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
   color: var(--color-text-muted);
 }
 
+.dutch-cell-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dutch-cell-content .cell-input {
+  flex: 1;
+}
+
 .dutch-input {
   /* Dutch text styling */
+}
+
+.review-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.review-btn:hover {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.review-btn:active {
+  transform: translateY(0);
+}
+
+.review-btn.has-cache {
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  color: var(--color-success);
+}
+
+.review-btn.has-cache:hover {
+  background: color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+
+.review-btn.is-active {
+  background: var(--color-accent);
+  color: white;
+}
+
+.review-btn.is-active:hover {
+  background: var(--color-accent-hover);
+}
+
+.review-btn-text {
+  /* Text styling */
 }
 
 .row-actions {

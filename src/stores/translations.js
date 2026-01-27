@@ -10,8 +10,10 @@ import {
   saveTranslation,
   updateTranslation,
   deleteTranslation,
-  initDB
+  initDB,
+  getApiKey
 } from '../services/storage'
+import { reviewTranslation } from '../services/gemini'
 import logger from '../services/logger'
 
 export const useTranslationsStore = defineStore('translations', () => {
@@ -21,9 +23,25 @@ export const useTranslationsStore = defineStore('translations', () => {
   const isLoading = ref(false)
   const isInitialized = ref(false)
 
+  // AI Review State
+  const reviewSentenceId = ref(null) // ID of sentence currently being reviewed
+  const isReviewLoading = ref(false)
+  const reviewError = ref(null)
+
   // Getters
   const translationCount = computed(() => translations.value.length)
   const hasTranslations = computed(() => translations.value.length > 0)
+  
+  // Get the current sentence being reviewed
+  const currentReviewSentence = computed(() => {
+    if (!reviewSentenceId.value || !currentTranslation.value) return null
+    return currentTranslation.value.sentences.find(s => s.id === reviewSentenceId.value)
+  })
+  
+  // Get cached review content for the current review sentence
+  const currentReviewContent = computed(() => {
+    return currentReviewSentence.value?.aiReview?.content || null
+  })
 
   // Actions
   async function initialize() {
@@ -151,11 +169,18 @@ export const useTranslationsStore = defineStore('translations', () => {
     const sentenceIndex = sentences.findIndex(s => s.id === sentenceId)
     
     if (sentenceIndex !== -1) {
-      sentences[sentenceIndex] = {
+      const updatedSentence = {
         ...sentences[sentenceIndex],
         [field]: value
       }
       
+      // Clear cached AI review when english or dutch content changes
+      if (field === 'english' || field === 'dutch') {
+        delete updatedSentence.aiReview
+        logger.action(`Cleared AI review cache for sentence ${sentenceId}`)
+      }
+      
+      sentences[sentenceIndex] = updatedSentence
       await updateCurrentTranslation({ sentences })
     }
   }
@@ -249,6 +274,132 @@ export const useTranslationsStore = defineStore('translations', () => {
     currentTranslation.value = null
   }
 
+  // =====================
+  // AI Review Functions
+  // =====================
+
+  /**
+   * Get context sentences (3 before and 3 after) for a given sentence
+   */
+  function getContextSentences(sentenceId) {
+    if (!currentTranslation.value) return { before: [], after: [] }
+    
+    const sentences = currentTranslation.value.sentences
+    const index = sentences.findIndex(s => s.id === sentenceId)
+    
+    if (index === -1) return { before: [], after: [] }
+    
+    const before = sentences
+      .slice(Math.max(0, index - 3), index)
+      .map(s => s.english)
+      .filter(text => text?.trim())
+    
+    const after = sentences
+      .slice(index + 1, index + 4)
+      .map(s => s.english)
+      .filter(text => text?.trim())
+    
+    return { before, after }
+  }
+
+  /**
+   * Check if a sentence has a cached AI review
+   */
+  function hasReviewCache(sentenceId) {
+    if (!currentTranslation.value) return false
+    const sentence = currentTranslation.value.sentences.find(s => s.id === sentenceId)
+    return !!sentence?.aiReview?.content
+  }
+
+  /**
+   * Open the review sidebar for a sentence
+   */
+  function openReview(sentenceId) {
+    logger.action(`Opening review for sentence ${sentenceId}`)
+    reviewSentenceId.value = sentenceId
+    reviewError.value = null
+  }
+
+  /**
+   * Close the review sidebar
+   */
+  function closeReview() {
+    logger.action('Closing review sidebar')
+    reviewSentenceId.value = null
+    reviewError.value = null
+    isReviewLoading.value = false
+  }
+
+  /**
+   * Request an AI review for the current review sentence
+   */
+  async function requestReview() {
+    if (!reviewSentenceId.value || !currentTranslation.value) return
+    
+    const sentence = currentTranslation.value.sentences.find(
+      s => s.id === reviewSentenceId.value
+    )
+    
+    if (!sentence) {
+      reviewError.value = 'Sentence not found'
+      return
+    }
+    
+    // Check if we have a cached review
+    if (sentence.aiReview?.content) {
+      logger.action('Using cached AI review')
+      return
+    }
+    
+    const apiKey = getApiKey()
+    if (!apiKey) {
+      reviewError.value = 'API key not configured. Please set up your API key in Settings.'
+      return
+    }
+    
+    logger.actionStart(`Generating AI review for sentence ${reviewSentenceId.value}`)
+    isReviewLoading.value = true
+    reviewError.value = null
+    
+    try {
+      const { before, after } = getContextSentences(reviewSentenceId.value)
+      
+      const result = await reviewTranslation(
+        apiKey,
+        sentence.english,
+        sentence.dutch,
+        before,
+        after
+      )
+      
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      
+      // Save the review to the sentence
+      const sentences = [...currentTranslation.value.sentences]
+      const sentenceIndex = sentences.findIndex(s => s.id === reviewSentenceId.value)
+      
+      if (sentenceIndex !== -1) {
+        sentences[sentenceIndex] = {
+          ...sentences[sentenceIndex],
+          aiReview: {
+            content: result.content,
+            generatedAt: new Date().toISOString()
+          }
+        }
+        
+        await updateCurrentTranslation({ sentences })
+        logger.actionSuccess('AI review generated and cached')
+      }
+    } catch (error) {
+      logger.error('Failed to generate AI review', error)
+      reviewError.value = error.message || 'Failed to generate review'
+    } finally {
+      isReviewLoading.value = false
+    }
+  }
+
   return {
     // State
     translations,
@@ -256,9 +407,16 @@ export const useTranslationsStore = defineStore('translations', () => {
     isLoading,
     isInitialized,
     
+    // AI Review State
+    reviewSentenceId,
+    isReviewLoading,
+    reviewError,
+    
     // Getters
     translationCount,
     hasTranslations,
+    currentReviewSentence,
+    currentReviewContent,
     
     // Actions
     initialize,
@@ -271,6 +429,13 @@ export const useTranslationsStore = defineStore('translations', () => {
     deleteSentence,
     renameTranslation,
     removeTranslation,
-    clearCurrentTranslation
+    clearCurrentTranslation,
+    
+    // AI Review Actions
+    getContextSentences,
+    hasReviewCache,
+    openReview,
+    closeReview,
+    requestReview
   }
 })
