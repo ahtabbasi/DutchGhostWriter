@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTranslationsStore } from '../../stores/translations'
 import { shouldHidePopupWarning } from '../../services/storage'
 import TranslatePopupDialog from './TranslatePopupDialog.vue'
@@ -46,6 +46,20 @@ function handleRetry() {
   logger.action('Retrying AI review request')
   translationsStore.requestReview()
 }
+
+function handleKeydown(event) {
+  if (event.key === 'Escape' && isOpen.value) {
+    handleClose()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+})
 
 /**
  * Build a simple prompt for ChatGPT
