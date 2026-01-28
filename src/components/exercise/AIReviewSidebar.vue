@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useTranslationsStore } from '../../stores/translations'
 import { shouldHidePopupWarning } from '../../services/storage'
 import TranslatePopupDialog from './TranslatePopupDialog.vue'
+import logger from '../../services/logger'
 
 const translationsStore = useTranslationsStore()
 
@@ -37,10 +38,12 @@ watch(() => translationsStore.reviewSentenceId, (newId, oldId) => {
 })
 
 function handleClose() {
+  logger.action('Closing AI review sidebar')
   translationsStore.closeReview()
 }
 
 function handleRetry() {
+  logger.action('Retrying AI review request')
   translationsStore.requestReview()
 }
 
@@ -61,6 +64,8 @@ My translation: ${sentence.value.dutch}`
  */
 function handleChatGPT() {
   if (!sentence.value) return
+  
+  logger.action('Opening ChatGPT for translation review')
   
   // Show popup warning dialog if not hidden
   if (!shouldHidePopupWarning()) {

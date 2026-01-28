@@ -87,7 +87,6 @@ export async function saveTranslation(translation) {
     
     request.onsuccess = () => {
       const savedId = request.result
-      logger.storage(`Translation saved with ID: ${savedId}`)
       resolve({ ...data, id: savedId })
     }
     
@@ -113,11 +112,6 @@ export async function getTranslation(id) {
     const request = store.get(id)
     
     request.onsuccess = () => {
-      if (request.result) {
-        logger.storage(`Translation found: ${request.result.title}`)
-      } else {
-        logger.warn(`Translation not found: ${id}`)
-      }
       resolve(request.result || null)
     }
     
@@ -196,7 +190,6 @@ export async function deleteTranslation(id) {
     const request = store.delete(id)
     
     request.onsuccess = () => {
-      logger.storage(`Translation deleted: ${id}`)
       resolve(true)
     }
     

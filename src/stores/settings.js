@@ -46,25 +46,22 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function setApiKey(key) {
-    logger.action('Setting API key')
     apiKey.value = key
     saveApiKey(key)
     logger.actionSuccess('API key saved')
   }
 
   function clearApiKey() {
-    logger.action('Clearing API key')
     apiKey.value = ''
     removeApiKey()
     logger.actionSuccess('API key cleared')
   }
 
   function setTheme(newTheme) {
-    logger.action(`Setting theme to: ${newTheme}`)
     theme.value = newTheme
     saveTheme(newTheme)
     applyTheme(newTheme)
-    logger.actionSuccess('Theme updated')
+    logger.actionSuccess(`Theme updated to: ${newTheme}`)
   }
 
   function toggleTheme() {
@@ -79,10 +76,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function setMaxTextLength(length) {
     const validLength = Math.max(100, Math.min(5000, length))
-    logger.action(`Setting max text length to: ${validLength}`)
     maxTextLength.value = validLength
     saveMaxTextLength(validLength)
-    logger.actionSuccess('Max text length updated')
+    logger.actionSuccess(`Max text length updated to: ${validLength}`)
   }
 
   return {

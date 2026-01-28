@@ -32,12 +32,11 @@ async function loadTranslation() {
   const id = parseInt(route.params.id, 10)
   
   if (isNaN(id)) {
-    logger.error('Invalid translation ID')
+    logger.error('Invalid translation ID in route')
     router.push({ name: 'home' })
     return
   }
   
-  logger.actionStart(`Loading translation: ${id}`)
   isLoading.value = true
   
   try {
@@ -46,9 +45,6 @@ async function loadTranslation() {
     if (!result) {
       error.value = 'Translation not found'
       showError.value = true
-      logger.actionFail('Translation not found')
-    } else {
-      logger.actionSuccess(`Loaded translation: ${result.title}`)
     }
   } catch (err) {
     error.value = err.message || 'Failed to load translation'

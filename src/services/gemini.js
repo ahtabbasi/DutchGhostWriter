@@ -137,6 +137,7 @@ IMPORTANT: Each sentence must start on a new line.`
 export async function generateFromPreset(apiKey, presetId, maxLength = 1000) {
   const preset = PRESET_TOPICS.find(p => p.id === presetId)
   if (!preset) {
+    logger.warn(`Invalid preset topic requested: ${presetId}`)
     return { success: false, error: 'Invalid preset topic' }
   }
   
@@ -148,8 +149,6 @@ export async function generateFromPreset(apiKey, presetId, maxLength = 1000) {
  * Split text into sentences
  */
 export function splitIntoSentences(text) {
-  logger.action('Splitting text into sentences')
-  
   // Split by sentence-ending punctuation followed by whitespace
   // This regex looks for .!? followed by space or end of string
   const sentences = text
@@ -157,7 +156,6 @@ export function splitIntoSentences(text) {
     .map(s => s.trim())
     .filter(s => s.length > 0)
   
-  logger.actionSuccess(`Split into ${sentences.length} sentences`)
   return sentences
 }
 

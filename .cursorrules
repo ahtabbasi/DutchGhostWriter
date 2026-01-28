@@ -1,0 +1,170 @@
+# Cursor Rules for Dutch GhostWriter
+
+## Logging Guidelines
+
+This project uses a centralized logging service (`src/services/logger.js`). All code changes must follow these logging patterns for consistency.
+
+### Core Principles
+
+1. **Log all user actions** - Every user-initiated action should be logged
+2. **Avoid console noise** - Don't log frequently-called functions (e.g., debounced handlers, watchers, computed getters)
+3. **Minimal context data** - Keep log data concise; include only essential identifiers
+4. **Success = minimal data, Failure = detailed data** - Log successes briefly, but include full context on failures
+
+### Logging by Layer
+
+| Layer | Logging Responsibility |
+|-------|----------------------|
+| **Services** (`src/services/`) | Primary logging layer. Log all operations, API calls, storage access |
+| **Stores** (`src/stores/`) | Log state changes, actions, and business logic operations |
+| **Views** (`src/views/`) | Minimal logging. Only log view-specific errors or unique context not available in stores |
+| **Components** (`src/components/`) | **No logging**. Delegate to stores/services via events and method calls |
+
+### Async Operations Pattern
+
+All async operations MUST log both start and completion:
+
+```javascript
+// ✅ Correct pattern
+async function fetchData() {
+  logger.actionStart('Fetching data')
+  try {
+    const result = await api.getData()
+    logger.actionSuccess('Data fetched')  // Minimal success data
+    return result
+  } catch (error) {
+    logger.error('Failed to fetch data', error)  // Full error context
+    throw error
+  }
+}
+
+// ❌ Wrong - missing start log
+async function fetchData() {
+  try {
+    const result = await api.getData()
+    logger.actionSuccess('Data fetched')
+    return result
+  } catch (error) {
+    logger.error('Failed to fetch data', error)
+  }
+}
+```
+
+### Error Logging
+
+Always include the error object to get stack traces:
+
+```javascript
+// ✅ Correct - includes error object for stack trace
+logger.error('Operation failed', error)
+
+// ❌ Wrong - no stack trace
+logger.error('Operation failed')
+logger.error(`Operation failed: ${error.message}`)
+```
+
+### Log Categories
+
+Use the appropriate category method for each type of operation:
+
+| Category | Method | Use For | Example |
+|----------|--------|---------|---------|
+| **ACTION** | `logger.action()` | User-initiated actions | Opening dialogs, button clicks, form submissions |
+| **ACTION** | `logger.actionStart()` | Start of async user action | Beginning API call, starting save operation |
+| **ACTION** | `logger.actionSuccess()` | Successful completion | Save completed, validation passed |
+| **ACTION** | `logger.actionFail()` | Non-critical failure | Validation failed, empty result |
+| **API** | `logger.api()` | General API operations | Starting API interaction |
+| **API** | `logger.apiRequest()` | Outgoing API request | HTTP request details |
+| **API** | `logger.apiSuccess()` | API response received | Response confirmation |
+| **API** | `logger.apiFail()` | API error | Request failed, bad response |
+| **STORAGE** | `logger.storage()` | General storage operations | DB initialization |
+| **STORAGE** | `logger.storageRead()` | Reading from storage | Fetching data |
+| **STORAGE** | `logger.storageWrite()` | Writing to storage | Saving data |
+| **STORAGE** | `logger.storageDelete()` | Deleting from storage | Removing data |
+| **ROUTER** | `logger.router()` | Navigation events | Route changes, redirects |
+| **APP** | `logger.app()` | Application lifecycle | Initialization, mounting |
+| **ERROR** | `logger.error()` | Critical errors | Exceptions, crashes |
+| **WARN** | `logger.warn()` | Warnings | Invalid input, deprecated usage |
+
+### Success vs Failure Data
+
+```javascript
+// ✅ Success - minimal data
+logger.actionSuccess('Translation saved')
+logger.apiSuccess('Response received')
+
+// ✅ Failure - include context for debugging
+logger.error('Failed to save translation', {
+  translationId: id,
+  sentenceCount: sentences.length,
+  error: error.message
+})
+logger.apiFail(endpoint, { status: response.status, error: errorData })
+```
+
+### What NOT to Log
+
+- Component lifecycle events (mounted, unmounted, etc.)
+- Computed property evaluations
+- Watcher triggers
+- Every keystroke or input change (only log after debounce/commit)
+- Internal helper function calls
+- Getter/setter access
+
+### What TO Log
+
+- User clicking buttons or submitting forms
+- Navigation between views
+- API requests and responses
+- Database read/write/delete operations
+- Authentication events
+- Error conditions
+- State changes in stores
+- Initialization and cleanup operations
+
+### Sensitive Data
+
+Never log sensitive data in plain text:
+- API keys → mask as `***`
+- Passwords → never log
+- Personal information → avoid or anonymize
+
+```javascript
+// ✅ Correct
+logger.storageWrite('apiKey', '***')
+
+// ❌ Wrong
+logger.storageWrite('apiKey', actualApiKey)
+```
+
+### Avoiding Redundant Logs
+
+Don't duplicate logs across layers. If a store method logs an action, the calling view should not log the same action:
+
+```javascript
+// In store - logs the action
+async function saveTranslation(data) {
+  logger.actionStart('Saving translation')
+  // ... save logic
+  logger.actionSuccess('Translation saved')
+}
+
+// In view - DON'T duplicate
+async function handleSave() {
+  // ❌ Don't add: logger.action('Saving translation')
+  await store.saveTranslation(data)
+  // ❌ Don't add: logger.actionSuccess('Saved')
+}
+```
+
+### Category Guidelines Maintenance
+
+When adding new features or modifying existing ones:
+1. Review if existing categories are appropriate
+2. If a new category pattern emerges, update this document
+3. Keep category usage consistent across similar operations
+
+---
+
+*Last updated: January 2026*
+*These guidelines should be updated when logging patterns evolve.*
