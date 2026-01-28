@@ -169,15 +169,18 @@ export const useTranslationsStore = defineStore('translations', () => {
     const sentenceIndex = sentences.findIndex(s => s.id === sentenceId)
     
     if (sentenceIndex !== -1) {
+      const currentSentence = sentences[sentenceIndex]
       const updatedSentence = {
-        ...sentences[sentenceIndex],
+        ...currentSentence,
         [field]: value
       }
       
-      // Clear cached AI review when english or dutch content changes
-      if (field === 'english' || field === 'dutch') {
-        delete updatedSentence.aiReview
-        logger.action(`Cleared AI review cache for sentence ${sentenceId}`)
+      // Mark AI review as stale when english or dutch content changes
+      if ((field === 'english' || field === 'dutch') && currentSentence.aiReview?.content) {
+        updatedSentence.aiReview = {
+          ...currentSentence.aiReview,
+          stale: true
+        }
       }
       
       sentences[sentenceIndex] = updatedSentence
@@ -312,6 +315,15 @@ export const useTranslationsStore = defineStore('translations', () => {
   }
 
   /**
+   * Check if a sentence's cached AI review is stale (content changed since review)
+   */
+  function isReviewStale(sentenceId) {
+    if (!currentTranslation.value) return false
+    const sentence = currentTranslation.value.sentences.find(s => s.id === sentenceId)
+    return !!sentence?.aiReview?.stale
+  }
+
+  /**
    * Open the review sidebar for a sentence
    */
   function openReview(sentenceId) {
@@ -345,8 +357,8 @@ export const useTranslationsStore = defineStore('translations', () => {
       return
     }
     
-    // Check if we have a cached review
-    if (sentence.aiReview?.content) {
+    // Check if we have a fresh cached review (not stale)
+    if (sentence.aiReview?.content && !sentence.aiReview?.stale) {
       logger.action('Using cached AI review')
       return
     }
@@ -434,6 +446,7 @@ export const useTranslationsStore = defineStore('translations', () => {
     // AI Review Actions
     getContextSentences,
     hasReviewCache,
+    isReviewStale,
     openReview,
     closeReview,
     requestReview

@@ -34,6 +34,11 @@ const hasCachedReview = computed(() => {
   return translationsStore.hasReviewCache(props.sentence.id)
 })
 
+// Check if the cached review is stale (content changed since review)
+const isReviewStale = computed(() => {
+  return translationsStore.isReviewStale(props.sentence.id)
+})
+
 // Check if this row is currently being reviewed
 const isBeingReviewed = computed(() => {
   return translationsStore.reviewSentenceId === props.sentence.id
@@ -150,17 +155,28 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
         <button 
           v-if="showReviewButton"
           class="review-btn"
-          :class="{ 'has-cache': hasCachedReview, 'is-active': isBeingReviewed }"
+          :class="{ 
+            'has-cache': hasCachedReview && !isReviewStale, 
+            'is-stale': isReviewStale,
+            'is-active': isBeingReviewed 
+          }"
           @click="handleReview"
-          :title="hasCachedReview ? 'View AI Review' : 'Get AI Review'"
+          :title="isReviewStale ? 'Review Outdated' : (hasCachedReview ? 'View AI Review' : 'Get AI Review')"
         >
-          <!-- Sparkle icon for new review -->
+          <!-- Sparkle icon for no review -->
           <svg v-if="!hasCachedReview" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
             <path d="M20 3v4"/>
             <path d="M22 5h-4"/>
           </svg>
-          <!-- Checkmark icon for cached review -->
+          <!-- Recycle icon for stale cached review -->
+          <svg v-else-if="isReviewStale" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+            <path d="M16 16h5v5"/>
+          </svg>
+          <!-- Checkmark icon for fresh cached review -->
           <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
             <path d="m9 12 2 2 4-4"/>
@@ -382,6 +398,15 @@ const isEmpty = () => !englishValue.value.trim() && !dutchValue.value.trim()
 }
 
 .review-btn.has-cache:hover {
+  background: color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+
+.review-btn.is-stale {
+  background: color-mix(in srgb, var(--color-success) 15%, transparent);
+  color: var(--color-success);
+}
+
+.review-btn.is-stale:hover {
   background: color-mix(in srgb, var(--color-success) 25%, transparent);
 }
 

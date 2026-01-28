@@ -14,6 +14,10 @@ const isLoading = computed(() => translationsStore.isReviewLoading)
 const error = computed(() => translationsStore.reviewError)
 const sentence = computed(() => translationsStore.currentReviewSentence)
 const reviewContent = computed(() => translationsStore.currentReviewContent)
+const isStale = computed(() => {
+  if (!translationsStore.reviewSentenceId) return false
+  return translationsStore.isReviewStale(translationsStore.reviewSentenceId)
+})
 
 // Find the index of the sentence being reviewed
 const sentenceIndex = computed(() => {
@@ -44,6 +48,11 @@ function handleClose() {
 
 function handleRetry() {
   logger.action('Retrying AI review request')
+  translationsStore.requestReview()
+}
+
+function handleReviewAgain() {
+  logger.action('Regenerating stale AI review')
   translationsStore.requestReview()
 }
 
@@ -205,6 +214,22 @@ function renderMarkdown(text) {
             <span class="preview-label">Your translation:</span>
             <span class="preview-text dutch">{{ sentence.dutch }}</span>
           </div>
+        </div>
+
+        <!-- Stale review banner -->
+        <div v-if="isStale && reviewContent && !isLoading" class="stale-banner">
+          <div class="stale-content">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 16h5v5"/>
+            </svg>
+            <span>Content has changed since this review was generated.</span>
+          </div>
+          <button class="review-again-btn" @click="handleReviewAgain">
+            Review Again
+          </button>
         </div>
 
         <!-- Content area -->
@@ -461,6 +486,52 @@ function renderMarkdown(text) {
 .preview-text.dutch {
   color: var(--color-accent);
   font-weight: 500;
+}
+
+/* Stale banner */
+.stale-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  background: color-mix(in srgb, var(--color-warning, #f59e0b) 10%, var(--color-bg-primary));
+  border-bottom: 1px solid color-mix(in srgb, var(--color-warning, #f59e0b) 30%, transparent);
+}
+
+.stale-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-warning, #f59e0b);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.stale-content svg {
+  flex-shrink: 0;
+}
+
+.review-again-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: var(--color-warning, #f59e0b);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.review-again-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.review-again-btn:active {
+  transform: translateY(0);
 }
 
 /* Content area */
