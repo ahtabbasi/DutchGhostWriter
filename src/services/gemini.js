@@ -5,7 +5,7 @@
 import logger from './logger'
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
-const MODEL = 'gemini-2.5-flash'
+const MODEL = 'gemini-2.5-flash-lite'
 
 /**
  * Preset topic suggestions for text generation
@@ -212,9 +212,7 @@ Respond using Markdown with the following structure:
 
 ### Overall Assessment
 [One of: ✅ Excellent | 👍 Good | ⚠️ Needs Improvement | ❌ Incorrect]
-
-### Feedback
-[2-3 sentences explaining what the user did well and what needs improvement. Be specific about grammar, word choice, word order, or spelling issues. Use **bold** to highlight specific Dutch words or phrases being discussed.]
+[Use excellent when there are no corrections needed]
 
 ### Corrections
 [If there are errors, list them as bullet points. Format each as:]
@@ -225,8 +223,11 @@ Respond using Markdown with the following structure:
 ### Suggested Translation
 > [Your recommended Dutch translation in a blockquote]
 
-### Tips
-💡 [One helpful tip for remembering this grammar rule or vocabulary. Use \`inline code\` for specific Dutch words or grammar terms.]
+### Alternative Translation
+> [An alternative Dutch translation in a blockquote]
+
+### 💡 Tips
+- [One helpful tip for remembering this grammar rule or vocabulary. Use \`inline code\` for specific Dutch words or grammar terms.]
 
 ## Styling Guidelines
 - Use **bold** for Dutch words and phrases that are being discussed or corrected
