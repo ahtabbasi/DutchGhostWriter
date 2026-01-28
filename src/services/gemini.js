@@ -147,15 +147,24 @@ export async function generateFromPreset(apiKey, presetId, maxLength = 1000) {
 
 /**
  * Split text into sentences
+ * Uses a hybrid approach: first splits by newlines (for headlines/AI-formatted text),
+ * then splits each line by sentence-ending punctuation (for multiple sentences per line)
  */
 export function splitIntoSentences(text) {
-  // Split by sentence-ending punctuation followed by whitespace
-  // This regex looks for .!? followed by space or end of string
-  const sentences = text
-    .split(/(?<=[.!?])\s+/)
-    .map(s => s.trim())
-    .filter(s => s.length > 0)
+  logger.action('Splitting text into sentences')
   
+  // First split by newlines to handle headlines and AI-formatted text
+  const lines = text.split(/\n/).map(s => s.trim()).filter(s => s.length > 0)
+  
+  // Then split each line by sentence-ending punctuation followed by whitespace
+  const sentences = lines.flatMap(line =>
+    line
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+  )
+  
+  logger.actionSuccess(`Split into ${sentences.length} sentences`)
   return sentences
 }
 
