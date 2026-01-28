@@ -103,8 +103,8 @@ function renderMarkdown(text) {
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // Blockquotes
-    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    // Blockquotes (note: > is escaped to &gt; above)
+    .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
     // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     // Italics
@@ -119,6 +119,8 @@ function renderMarkdown(text) {
     .replace(/\n\n/g, '</p><p>')
     // Single newlines within paragraphs
     .replace(/\n/g, '<br>')
+    // Remove <br> after block elements (they create their own line breaks)
+    .replace(/<\/(h[1-6]|blockquote|ul)><br>/g, '</$1>')
   
   // Wrap in paragraph if not starting with block element
   if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<blockquote')) {
