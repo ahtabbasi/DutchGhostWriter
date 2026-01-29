@@ -226,8 +226,9 @@ Respond using Markdown with the following structure:
 ### Alternative Translation
 > [An alternative Dutch translation in a blockquote]
 
-### 💡 Tips
-- [One helpful tip for remembering this grammar rule or vocabulary. Use \`inline code\` for specific Dutch words or grammar terms.]
+### 💡 Grammar Tips
+- [One helpful tip about a grammar rule used in the sentence. Use \`inline code\` for specific Dutch words or grammar terms.]
+- [Examples of that grammar rule]
 
 ## Styling Guidelines
 - Use **bold** for Dutch words and phrases that are being discussed or corrected
