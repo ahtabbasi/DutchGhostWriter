@@ -77,6 +77,21 @@ function cancelDelete() {
 function isActive(id) {
   return route.params.id === String(id)
 }
+
+/**
+ * Get translation status based on completed sentences
+ * @returns 'new' | 'in-progress' | 'completed'
+ */
+function getTranslationStatus(translation) {
+  const sentences = translation.sentences || []
+  if (sentences.length === 0) return 'new'
+  
+  const translatedCount = sentences.filter(s => s.dutch && s.dutch.trim()).length
+  
+  if (translatedCount === 0) return 'new'
+  if (translatedCount === sentences.length) return 'completed'
+  return 'in-progress'
+}
 </script>
 
 <template>
@@ -165,7 +180,29 @@ function isActive(id) {
                 class="item-content"
                 @click="openTranslation(translation.id)"
               >
-                <span class="item-title">{{ translation.title }}</span>
+                <span class="item-title-row">
+                  <span 
+                    class="status-icon"
+                    :class="`status-${getTranslationStatus(translation)}`"
+                    :title="getTranslationStatus(translation) === 'new' ? 'New' : getTranslationStatus(translation) === 'in-progress' ? 'In Progress' : 'Completed'"
+                  >
+                    <!-- New: Empty notepad icon -->
+                    <svg v-if="getTranslationStatus(translation) === 'new'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    <!-- In Progress: Notepad with pencil icon -->
+                    <svg v-else-if="getTranslationStatus(translation) === 'in-progress'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    <!-- Completed: Bold checkmark -->
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="4 12 9 17 20 6"/>
+                    </svg>
+                  </span>
+                  <span class="item-title">{{ translation.title }}</span>
+                </span>
                 <span class="item-date">{{ new Date(translation.updatedAt).toLocaleDateString() }}</span>
               </button>
               <div class="item-actions">
@@ -435,6 +472,25 @@ function isActive(id) {
   color: inherit;
 }
 
+.item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-new,
+.status-in-progress,
+.status-completed {
+  color: var(--color-accent);
+}
+
 .item-title {
   font-size: 0.875rem;
   font-weight: 500;
@@ -442,7 +498,7 @@ function isActive(id) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 160px;
+  max-width: 140px;
 }
 
 .item-date {

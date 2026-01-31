@@ -1,0 +1,5 @@
+Unknown words:
+- Add an option to translate a single word from the translation page. 
+- Add that word in a list of unknown words for that page.
+- When user translates a word that was already translated once before, show a notification first.
+- Also show with each word how many times it has previously been translated.
